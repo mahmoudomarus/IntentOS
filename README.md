@@ -1,17 +1,19 @@
 # Intent OS
 
-Intent OS is a unified, local-first artificial intelligence dashboard designed to act as a **Personal Home Server** for agentic execution. It seamlessly integrates a beautiful, responsive mobile/web frontend (built with Expo) with a Next.js backend and a modified, secure OpenClaw WebSocket Gateway.
+Intent OS is an experimental **Intent-Driven AI Operating System** designed to demonstrate that traditional app menus are dead. Instead of navigating through screens, the user speaks or types a command, an LLM parses the intent, triggers a developer-defined tool, and the frontend dynamically generates an **ephemeral UI widget** specific to that exact task.
+
+This repository serves as a powerful framework for developers. You can smoothly build and plug in your own custom React Native tools/apps, and the Intent OS AI will automatically orchestrate them on demand.
 
 ![Intent OS Dashboard](docs/assets/dashboard.png) *(Note: add a real screenshot here later!)*
 
 ## 🌟 Core Features
 
-- **Swiss Typography Design Language**: A minimalist, high-contrast, functional UI supporting dynamic Light and Dark modes.
+- **Generative UI Engine**: Automatically maps backend AI tool calls (e.g., `order_ride`, `fetch_weather`) directly to custom React Native boundary components. The UI is completely blank until an intent is spoken.
+- **Developer-Friendly Extensibility**: Devs can seamlessly add new tools. Just define a Zod schema for your tool in the OpenClaw gateway, build a matching React `.tsx` widget in the `/mobile` app, and Intent OS handles the rest—parsing the user's intent, extracting arguments, and rendering your UI dynamically.
+- **Swiss Typography Design Language**: A minimalist, high-contrast, functional UI supporting dynamic Light and Dark modes. No tab bars, no hamburger menus.
 - **Realtime Voice Interactions**: Talk directly to the AI agent using the unified `VoiceOrb`. It features visual indicators for 'listening', 'thinking', and 'speaking' states.
 - **Cross-Channel Global Sync**: An `activity.feed` interceptor broadcasts all agent activities across all connected devices in real-time. If you ask an agent via Discord or Terminal, your Intent OS tablet dashboard will immediately register a "WORKING..." activity pill and display the results.
 - **Local-First Identity Configuration**: Connects directly to the `~/.openclaw` directory, allowing users to safely manage API keys for (OpenAI, Anthropic, Google Gemini, Groq) and edit their agent's `SOUL.md` system prompt via the browser.
-- **Agent Action Widgets**: When the agent uses a tool (like fetching weather or ordering food), the UI dynamically intercepts the `function_call` from the LLM and renders custom interactive React widgets inline alongside the chat history.
-- **Secure External Tunnels**: Configured to run behind Cloudflare (`cloudflared`) and `ngrok`, with enforced static `Bearer` token authentication, effectively allowing you to access your personal AI home server from anywhere in the world securely.
 
 ## 🏗️ Architecture
 
