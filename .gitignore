@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+.expo/
+dist/
+build/
+.DS_Store
+*.log
+tunnel_gateway.log
+tunnel_next.log
+.cursor/
+.idea/
+.vscode/
