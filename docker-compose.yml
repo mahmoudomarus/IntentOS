@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: ./openclaw
+    container_name: intentos_gateway
+    ports:
+      - "18789:18789"
+    volumes:
+      # Mount the workspace data to the host so you can view/edit agent files locally
+      - ./openclaw_workspace:/root/.openclaw
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    container_name: intentos_backend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  mobile:
+    build:
+      context: ./mobile
+    container_name: intentos_frontend
+    ports:
+      - "8081:8081"
+    restart: unless-stopped

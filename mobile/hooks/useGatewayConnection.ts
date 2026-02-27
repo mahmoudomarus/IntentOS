@@ -49,6 +49,10 @@ const GATEWAY_TOKEN = process.env.EXPO_PUBLIC_INTENT_OS_SECRET || '8689fdc868663
 
 function getGatewayUrl(): string {
   if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      return `ws://${host}:18789`;
+    }
     return 'ws://127.0.0.1:18789';
   }
   // On native, localhost refers to the device — use LAN IP or 10.0.2.2 for Android emulator

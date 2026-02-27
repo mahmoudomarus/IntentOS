@@ -71,6 +71,15 @@ const PROVIDERS: ProviderConfig[] = [
     },
 ];
 
+const WORKSPACE_FILES = [
+    { id: 'SOUL.md', label: 'SOUL', desc: 'Core Persona' },
+    { id: 'USER.md', label: 'USER', desc: 'User Profile' },
+    { id: 'IDENTITY.md', label: 'IDENTITY', desc: 'Agent Metadata' },
+    { id: 'TOOLS.md', label: 'TOOLS', desc: 'Local Notes' },
+    { id: 'HEARTBEAT.md', label: 'HEARTBEAT', desc: 'Background Tasks' },
+    { id: 'AGENTS.md', label: 'AGENTS', desc: 'Behavioral Rules' },
+];
+
 interface Props {
     visible: boolean;
     onClose: () => void;
@@ -84,8 +93,12 @@ export default function SettingsPanel({ visible, onClose, gatewayStatus }: Props
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState<string | null>(null);
     const [inputs, setInputs] = useState<Record<string, string>>({});
-    const [soul, setSoul] = useState<string>('');
-    const [soulSaving, setSoulSaving] = useState(false);
+
+    // Workspace File State
+    const [activeTab, setActiveTab] = useState<string>('SOUL.md');
+    const [workspaceFiles, setWorkspaceFiles] = useState<Record<string, string>>({});
+    const [fileSaving, setFileSaving] = useState<string | null>(null);
+
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const [slideAnim] = useState(new Animated.Value(SCREEN_WIDTH));
 
@@ -113,18 +126,27 @@ export default function SettingsPanel({ visible, onClose, gatewayStatus }: Props
             if (process.env.EXPO_PUBLIC_INTENT_OS_SECRET) {
                 headers['Authorization'] = `Bearer ${process.env.EXPO_PUBLIC_INTENT_OS_SECRET}`;
             }
-            const [authRes, soulRes] = await Promise.all([
-                fetch(generateAPIUrl('/api/openclaw/auth?agentId=main'), { headers }),
-                fetch(generateAPIUrl('/api/openclaw/soul?agentId=main'), { headers }).catch(() => null)
-            ]);
 
+            // Fetch auth profiles
+            const authRes = await fetch(generateAPIUrl('/api/openclaw/auth?agentId=main'), { headers });
             const authData = await authRes.json();
             setProfiles(authData.profiles || []);
 
-            if (soulRes && soulRes.ok) {
-                const soulData = await soulRes.json();
-                setSoul(soulData.soul || '');
-            }
+            // Fetch all workspace files in parallel
+            const fileFetches = WORKSPACE_FILES.map(file =>
+                fetch(generateAPIUrl(`/api/openclaw/file?agentId=main&filename=${file.id}`), { headers })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => ({ id: file.id, content: data?.content || '' }))
+                    .catch(() => ({ id: file.id, content: '' }))
+            );
+
+            const fileResults = await Promise.all(fileFetches);
+            const newFilesState: Record<string, string> = {};
+            fileResults.forEach(res => {
+                newFilesState[res.id] = res.content;
+            });
+            setWorkspaceFiles(newFilesState);
+
         } catch {
             setProfiles([]);
         }
@@ -180,30 +202,31 @@ export default function SettingsPanel({ visible, onClose, gatewayStatus }: Props
         }
     }, [loadProfiles]);
 
-    const saveSoul = useCallback(async () => {
-        setSoulSaving(true);
+    const saveWorkspaceFile = useCallback(async (filename: string) => {
+        setFileSaving(filename);
         setMessage(null);
         try {
             const headers: Record<string, string> = { 'Content-Type': 'application/json' };
             if (process.env.EXPO_PUBLIC_INTENT_OS_SECRET) {
                 headers['Authorization'] = `Bearer ${process.env.EXPO_PUBLIC_INTENT_OS_SECRET}`;
             }
-            const res = await fetch(generateAPIUrl('/api/openclaw/soul'), {
+            const content = workspaceFiles[filename] || '';
+            const res = await fetch(generateAPIUrl(`/api/openclaw/file?agentId=main&filename=${filename}`), {
                 method: 'POST',
                 headers,
-                body: JSON.stringify({ agentId: 'main', soul }),
+                body: JSON.stringify({ content }),
             });
             const data = await res.json();
-            if (data.ok) {
-                setMessage({ text: `Agent Identity (SOUL) saved`, type: 'success' });
+            if (data.success) {
+                setMessage({ text: `${filename} saved successfully`, type: 'success' });
             } else {
-                setMessage({ text: data.error || 'Failed to save SOUL.md', type: 'error' });
+                setMessage({ text: data.error || `Failed to save ${filename}`, type: 'error' });
             }
         } catch (err: any) {
             setMessage({ text: err?.message || 'Network error', type: 'error' });
         }
-        setSoulSaving(false);
-    }, [soul]);
+        setFileSaving(null);
+    }, [workspaceFiles]);
 
     const isConfigured = (providerId: string) =>
         profiles.some((p) => p.provider === providerId && p.configured);
@@ -350,34 +373,54 @@ export default function SettingsPanel({ visible, onClose, gatewayStatus }: Props
                         )}
                     </View>
 
-                    {/* ── Agent Identity (SOUL.md) ── */}
+                    {/* ── OpenClaw Context Workspace ── */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>AGENT IDENTITY</Text>
+                        <Text style={styles.sectionTitle}>WORKSPACE CONTEXT</Text>
                         <Text style={styles.sectionHint}>
-                            Define the boundaries and persona of your agent (SOUL.md)
+                            Manage the markdown files that dictate your agent's behavior and memory.
                         </Text>
 
-                        <View style={styles.soulCard}>
-                            <TextInput
-                                style={styles.soulInput}
-                                multiline
-                                placeholder="Enter system instructions..."
-                                placeholderTextColor={colors.textMuted}
-                                value={soul}
-                                onChangeText={setSoul}
-                                textAlignVertical="top"
-                            />
-                            <TouchableOpacity
-                                style={[styles.saveBtn, { marginTop: T.s3, alignSelf: 'flex-start' }]}
-                                onPress={saveSoul}
-                                disabled={soulSaving}
-                            >
-                                {soulSaving ? (
-                                    <ActivityIndicator color={colors.bg} size="small" />
-                                ) : (
-                                    <Text style={styles.saveBtnText}>Save SOUL.md</Text>
-                                )}
-                            </TouchableOpacity>
+                        <View style={styles.workspaceCard}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer} contentContainerStyle={{ paddingHorizontal: T.s2 }}>
+                                {WORKSPACE_FILES.map((file) => (
+                                    <TouchableOpacity
+                                        key={file.id}
+                                        style={[styles.tabBtn, activeTab === file.id && styles.tabBtnActive]}
+                                        onPress={() => setActiveTab(file.id)}
+                                    >
+                                        <Text style={[styles.tabBtnText, activeTab === file.id && styles.tabBtnTextActive]}>
+                                            {file.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+
+                            <View style={styles.tabContentArea}>
+                                <Text style={styles.tabDesc}>
+                                    {WORKSPACE_FILES.find(f => f.id === activeTab)?.desc}
+                                </Text>
+                                <TextInput
+                                    style={styles.workspaceInput}
+                                    multiline
+                                    placeholder={`Write your ${activeTab} configurations here...`}
+                                    placeholderTextColor={colors.textMuted}
+                                    value={workspaceFiles[activeTab] || ''}
+                                    onChangeText={(v) => setWorkspaceFiles(prev => ({ ...prev, [activeTab]: v }))}
+                                    textAlignVertical="top"
+                                    autoCapitalize="none"
+                                />
+                                <TouchableOpacity
+                                    style={[styles.saveBtn, { marginTop: T.s4, alignSelf: 'flex-start' }]}
+                                    onPress={() => saveWorkspaceFile(activeTab)}
+                                    disabled={fileSaving === activeTab}
+                                >
+                                    {fileSaving === activeTab ? (
+                                        <ActivityIndicator color={colors.bg} size="small" />
+                                    ) : (
+                                        <Text style={styles.saveBtnText}>Save {activeTab}</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
 
@@ -641,18 +684,57 @@ const createStyles = (colors: any, T: any, isDark: boolean) => StyleSheet.create
         fontSize: T.fontSm,
         lineHeight: 18,
     },
-    soulCard: {
-        backgroundColor: colors.cardBg,
+    workspaceCard: {
+        backgroundColor: colors.cardBgHover,
         borderRadius: T.radiusSm,
         borderWidth: 1,
         borderColor: colors.border,
-        padding: T.s4,
+        overflow: 'hidden',
     },
-    soulInput: {
+    tabsContainer: {
+        flexDirection: 'row',
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+        backgroundColor: colors.cardBg,
+    },
+    tabBtn: {
+        paddingHorizontal: T.s4,
+        paddingVertical: T.s3,
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    tabBtnActive: {
+        borderBottomColor: colors.accent,
+    },
+    tabBtnText: {
+        color: colors.textTertiary,
+        fontSize: T.fontXs,
+        fontWeight: T.semibold,
+        letterSpacing: 1,
+    },
+    tabBtnTextActive: {
+        color: colors.textPrimary,
+    },
+    tabContentArea: {
+        padding: T.s4,
+        backgroundColor: colors.cardBg,
+    },
+    tabDesc: {
+        color: colors.textSecondary,
+        fontSize: T.fontXs,
+        marginBottom: T.s3,
+        fontStyle: 'italic',
+    },
+    workspaceInput: {
         color: colors.textPrimary,
         fontSize: T.fontSm,
         fontFamily: 'monospace',
-        minHeight: 120,
+        minHeight: 180,
+        backgroundColor: colors.cardBgHover,
+        padding: T.s3,
+        borderRadius: T.radiusXs,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     codePath: {
         fontFamily: 'monospace',

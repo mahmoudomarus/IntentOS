@@ -4,8 +4,12 @@ import Constants from 'expo-constants';
 export const generateAPIUrl = (relativePath: string) => {
   const path = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
 
-  // On web, the API is on localhost:3000
+  // On web, dynamically resolve the host IP so it works from mobile browsers over Wi-Fi
   if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      return `http://${host}:3000${path}`;
+    }
     return `http://localhost:3000${path}`;
   }
 
