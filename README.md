@@ -13,7 +13,8 @@ This repository serves as a powerful framework for developers. You can smoothly 
 - **Swiss Typography Design Language**: A minimalist, high-contrast, functional UI supporting dynamic Light and Dark modes. No tab bars, no hamburger menus.
 - **Realtime Voice Interactions**: Talk directly to the AI agent using the unified `VoiceOrb`. It features visual indicators for 'listening', 'thinking', and 'speaking' states.
 - **Cross-Channel Global Sync**: An `activity.feed` interceptor broadcasts all agent activities across all connected devices in real-time. If you ask an agent via Discord or Terminal, your Intent OS tablet dashboard will immediately register a "WORKING..." activity pill and display the results.
-- **Local-First Identity Configuration**: Connects directly to the `~/.openclaw` directory, allowing users to safely manage API keys for (OpenAI, Anthropic, Google Gemini, Groq) and edit their agent's `SOUL.md` system prompt via the browser.
+- **Tabbed Workspace Editor**: Manage the complete OpenClaw agent configuration (`SOUL.md`, `USER.md`, `IDENTITY.md`, `TOOLS.md`, `HEARTBEAT.md`, `AGENTS.md`) directly from the browser UI.
+- **Plug-and-Play Docker Architecture**: Completely containerized for instant local deployments without node, native module compilation errors, or port conflicts.
 
 ## 🏗️ Architecture
 
@@ -31,21 +32,24 @@ graph TD;
     Gateway <--Tool Calls--> LLM(Cloud LLM Models);
 ```
 
-## 🚀 Quickstart
+## 🚀 Quickstart (Plug and Play)
+
+Intent OS is fully containerized with Docker, meaning you don't have to install Node.js, native C++ compiler tools, or manage disparate background processes.
 
 1. Clone the repository.
-2. Run `npm install` inside `/backend`, `/mobile`, and `/openclaw`.
-3. Generate your secure static token and place it in the `.env.local` files for both the mobile and backend directories (`EXPO_PUBLIC_INTENT_OS_SECRET`).
-4. Boot the gateway:
    ```bash
-   cd openclaw
-   OPENCLAW_GATEWAY_TOKEN="your_secret_here" node src/gateway/cli.js agent start
+   git clone https://github.com/mahmoudomarus/IntentOS.git
+   cd IntentOS
    ```
-5. Boot the backend and mobile server:
+2. Generate your secure static token and place it in the `.env.local` files for both the mobile and backend directories (`EXPO_PUBLIC_INTENT_OS_SECRET`).
+3. Boot the entire stack:
    ```bash
-   cd backend && npm run dev
-   cd mobile && npx expo start --web
+   docker compose up -d --build
    ```
+4. **Access the environment:**
+   - **Frontend UI (Phone/Browser):** `http://localhost:8081` (or use your machine's local Wi-Fi IP from a physical phone).
+   - **OpenClaw Config:** Configuration files will automatically appear in the local `./openclaw_workspace` directory mapped to the gateway.
+   - **Gateway Hub:** `http://localhost:18789`
 
 ## 🗺️ Future Work Roadmap
 
